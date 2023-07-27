@@ -10,8 +10,12 @@ public class CadastroMapper extends MapperUtil<UsuarioRequest, Usuario> {
 	@Override
 	public Usuario transform(UsuarioRequest aObject) {
 		Usuario usuario = new Usuario();
-		usuario.setCpf(ValidateUtil.unmask(aObject.getCpf()));
-		usuario.setEmail(aObject.getEmail());
+		if(!aObject.docIsEmptyOrNull())
+			usuario.setCpf(ValidateUtil.unmask(aObject.getCpf()));
+
+		if(!aObject.emailIsEmptyOrNull())
+			usuario.setEmail(aObject.getEmail());
+
 		usuario.setFone(ValidateUtil.unmask(aObject.getFone()));
 		usuario.setNascimento(aObject.getNascimento());
 		usuario.setNome(aObject.getNome());

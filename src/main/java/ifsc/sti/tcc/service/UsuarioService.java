@@ -3,6 +3,9 @@ package ifsc.sti.tcc.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginEmailRequest;
+import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginRequest;
+import ifsc.sti.tcc.utilidades.ValidateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,9 +20,11 @@ import ifsc.sti.tcc.resources.mappers.viewtodomain.AlterarMapper;
 import ifsc.sti.tcc.resources.mappers.viewtodomain.CadastroMapper;
 import ifsc.sti.tcc.resources.rest.ResponseBase;
 import ifsc.sti.tcc.resources.rest.models.usuario.cadastro.UsuarioRequest;
-import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginRequest;
+import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginDocumentRequest;
 import ifsc.sti.tcc.resources.rest.models.usuario.login.response.UsuarioBaseResponse;
 import ifsc.sti.tcc.utilidades.ValidatedField;
+
+import static ifsc.sti.tcc.utilidades.ValidateUtil.STRING_OK;
 
 public class UsuarioService {
 
@@ -86,7 +91,7 @@ public class UsuarioService {
 				usuarioBaseResponses.size() > 0 ? "Informações carredas com sucesso" : "Nenhum usuário cadastrado",
 				usuarioBaseResponses);
 
-		return new ResponseEntity<ResponseBase<List<UsuarioBaseResponse>>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
 	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> buscar(long id) {
@@ -97,67 +102,89 @@ public class UsuarioService {
 		} else {
 			baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Usuario não encontrado", null);
 		}
-		return new ResponseEntity<ResponseBase<UsuarioBaseResponse>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
 	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> buscar(String cpf) {
 		Usuario usuario = jpaRepository.findByCpf(cpf);
-		ResponseBase<UsuarioBaseResponse> baseResponse = new ResponseBase<>();
+		ResponseBase<UsuarioBaseResponse> baseResponse;
 		if (usuario != null) {
 			baseResponse = new ResponseBase<>(true, "Informações carredas com sucesso", converterUsuario(usuario));
 		} else {
 			baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Usuario não encontrado", null);
 		}
-		return new ResponseEntity<ResponseBase<UsuarioBaseResponse>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
-	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> autenticar(LoginRequest loginRequest) {
-		ResponseBase<UsuarioBaseResponse> baseResponse = new ResponseBase<>();
-		Usuario usuario = jpaRepository.findByCpf(loginRequest.getCpf());
+	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> autenticar(LoginDocumentRequest loginRequest) {
+		Usuario usuario = jpaRepository.findByCpf(ValidateUtil.unmask(loginRequest.getCpf()));
+		return verificarSenha(usuario, loginRequest.getSenha());
+	}
+
+	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> autenticar(LoginEmailRequest loginRequest) {
+		int result = ValidateUtil.validateStringWithRegex(loginRequest.getEmail(), 200, ValidateUtil.REGEX_EMAIL);
+		if (result == STRING_OK) {
+			Usuario usuario = jpaRepository.findByEmail( loginRequest.getEmail());
+			return verificarSenha(usuario, loginRequest.getSenha());
+		} else {
+			return new ResponseEntity<>(new ResponseBase<>(false, "Não foi possível carregar as informações",
+					null), HttpStatus.OK);
+
+		}
+	}
+
+	private ResponseEntity<ResponseBase<UsuarioBaseResponse>> verificarSenha(Usuario usuario, String senha) {
+		ResponseBase<UsuarioBaseResponse> baseResponse;
 		if (usuario != null) {
-			if (Usuario.autenticarUsuario(usuario, loginRequest.getSenha())) {
+			if (Usuario.autenticarUsuario(usuario, senha)) {
 				baseResponse = new ResponseBase<>(true, "Informações carredas com sucesso", converterUsuario(usuario));
 			} else {
-				baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Usuário ou Senha inválida", null);
+				baseResponse = new ResponseBase<>(false, "Usuário ou Senha inválida", null);
 			}
 		} else {
-			baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Não foi possível carregar as informações",
+			baseResponse = new ResponseBase<>(false, "Não foi possível carregar as informações",
 					null);
 		}
-		return new ResponseEntity<ResponseBase<UsuarioBaseResponse>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
 	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> cadastrar(UsuarioRequest usuarioRequest) {
-		ResponseBase<UsuarioBaseResponse> baseResponse = new ResponseBase<>();
+		ResponseBase<UsuarioBaseResponse> baseResponse;
 		ValidatedField validatedField = usuarioRequest.validarCampos();
 		if (validatedField.getSuccess()) {
-			if (jpaRepository.findByCpf(usuarioRequest.getCpf()) == null) {
+
+			if(!usuarioRequest.docIsEmptyOrNull()) {
+				if (jpaRepository.findByCpf(usuarioRequest.getCpf()) != null) {
+					return new ResponseEntity<>(new ResponseBase<>(false, "Usuario já cadastrado", null), HttpStatus.OK);
+				}
+			}
+
+			if(!usuarioRequest.emailIsEmptyOrNull()) {
+				if (jpaRepository.findByEmail(usuarioRequest.getEmail()) != null) {
+					return new ResponseEntity<>(new ResponseBase<>(false, "Email já cadastrado", null), HttpStatus.OK);
+				}
+			}
+
+			if (usuarioRequest.authIsEmptyOrNull()) {
+				return new ResponseEntity<>(new ResponseBase<>(false, "Informe um Email ou Documento para realizar o cadastro", null), HttpStatus.OK);
+			}
+
+			else {
 				Usuario usuario = salvarUsuario(usuarioRequest);
-				
 				if (usuarioRequest.getImagemPerfil() != null) {
 					imagemService.saveImage(usuario.getId(), usuarioRequest.getImagemPerfil());
 				}
-				
-				if (usuario != null) {
-					baseResponse = new ResponseBase<UsuarioBaseResponse>(true, "Usuario cadastrado com sucesso",
-							converterUsuario(usuario));
-				} else {
-					baseResponse = new ResponseBase<UsuarioBaseResponse>(false,
-							"Não foi possível cadastrar o usuário, tente novamente mais tarde",
-							converterUsuario(usuario));
-				}
-	
-			} else {
-				baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Usuario já cadastrado", null);
+				baseResponse = new ResponseBase<>(true, "Usuario cadastrado com sucesso",
+						converterUsuario(usuario));
 			}
 		} else {
-			baseResponse = new ResponseBase<UsuarioBaseResponse>(false, validatedField.getMsm(), null);
+			baseResponse = new ResponseBase<>(false, validatedField.getMsm(), null);
 		}
-		return new ResponseEntity<ResponseBase<UsuarioBaseResponse>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
 	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> alterar(UsuarioRequest usuarioRequest) {
-		ResponseBase<UsuarioBaseResponse> baseResponse = new ResponseBase<>();
+		ResponseBase<UsuarioBaseResponse> baseResponse;
 		ValidatedField validatedField = usuarioRequest.validarCampos();
 		if (validatedField.getSuccess()) {
 			Usuario usuario = jpaRepository.findByCpf(usuarioRequest.getCpf());
@@ -166,24 +193,16 @@ public class UsuarioService {
 					usuarioRequest.setSenha(usuario.getSenha());
 				}
 				Usuario usuarioAlterado = alterarUsuario(usuario, usuarioRequest);
-				
 				imagemService.alterarImagem(usuario.getId(), usuarioRequest.getImagemPerfil());
-				
-				if (usuarioAlterado != null) {
-					baseResponse = new ResponseBase<UsuarioBaseResponse>(true, "Usuario Alterado com sucesso",
-							converterUsuario(usuarioAlterado));
-				} else {
-					baseResponse = new ResponseBase<UsuarioBaseResponse>(false,
-							"Não foi possível alterar o usuário, tente novamente mais tarde",
-							converterUsuario(usuario));
-				}
+				baseResponse = new ResponseBase<>(true, "Usuario Alterado com sucesso",
+						converterUsuario(usuarioAlterado));
 			} else {
-				baseResponse = new ResponseBase<UsuarioBaseResponse>(false, "Usuario não encontrado", null);
+				baseResponse = new ResponseBase<>(false, "Usuario não encontrado", null);
 			}
 		} else {
-			baseResponse = new ResponseBase<UsuarioBaseResponse>(false, validatedField.getMsm(), null);
+			baseResponse = new ResponseBase<>(false, validatedField.getMsm(), null);
 		}
-		return new ResponseEntity<ResponseBase<UsuarioBaseResponse>>(baseResponse, HttpStatus.OK);
+		return new ResponseEntity<>(baseResponse, HttpStatus.OK);
 	}
 
 	public UsuarioRepository getJpaRepository() {

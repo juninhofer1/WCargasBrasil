@@ -22,51 +22,51 @@ import ifsc.sti.tcc.service.FocoService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
-@CrossOrigin(origins = "*")
-@RestController
-@RequestMapping(value = "/api")
-@Api(value = "API REST STI Focos")
-public class FocoAPI {
-
-	
-	@Autowired
-	private FocoRepository focoRepository;
-	
-	@Autowired
-	private UsuarioRepository usuarioRepository;
-	
-	@Autowired
-	private ImagemRepository imagemRepository;
-	
-	
-	@ApiOperation(value = "Registra um possível foco de dengue")
-	@RequestMapping(value = "/CadastrarFoco", method = RequestMethod.POST)
-	public ResponseEntity<ResponseBase<FocoResponse>> registarFoco(@RequestBody FocoRequest focoRequest) {
-		FocoService focoService = new FocoService.Instance(focoRepository)
-				.withUsuarioRepository(usuarioRepository)
-				.withImagemRepository(imagemRepository)
-				.build();
-		return focoService.cadastrar(focoRequest);
-	}
-	
-	
-	@ApiOperation(value = "Busca todos os focos de dengue")
-	@GetMapping("/BuscarFocos")
-	public ResponseEntity<ResponseBase<List<FocoResponse>>> buscarTodosOsFocos() {
-		FocoService focoService = new FocoService.Instance(focoRepository)
-				.withUsuarioRepository(usuarioRepository)
-				.withImagemRepository(imagemRepository)
-				.build();
-		return focoService.buscarFocos();
-	}
-	
-	@ApiOperation(value = "Busca todos os focos de dengue de um usuário")
-	@GetMapping("/BuscarFocosPorId")
-	public ResponseEntity<ResponseBase<List<FocoResponse>>> buscarTodosOsFocos(@RequestParam Long idUsuario) {
-		FocoService focoService = new FocoService.Instance(focoRepository)
-				.withUsuarioRepository(usuarioRepository)
-				.withImagemRepository(imagemRepository)
-				.build();
-		return focoService.buscarFocos(idUsuario);
-	}
-}
+//@CrossOrigin(origins = "*")
+//@RestController
+//@RequestMapping(value = "/api")
+//@Api(value = "API REST STI Focos")
+//public class FocoAPI {
+//
+//
+//	@Autowired
+//	private FocoRepository focoRepository;
+//
+//	@Autowired
+//	private UsuarioRepository usuarioRepository;
+//
+//	@Autowired
+//	private ImagemRepository imagemRepository;
+//
+//
+//	@ApiOperation(value = "Registra um possível foco de dengue")
+//	@RequestMapping(value = "/CadastrarFoco", method = RequestMethod.POST)
+//	public ResponseEntity<ResponseBase<FocoResponse>> registarFoco(@RequestBody FocoRequest focoRequest) {
+//		FocoService focoService = new FocoService.Instance(focoRepository)
+//				.withUsuarioRepository(usuarioRepository)
+//				.withImagemRepository(imagemRepository)
+//				.build();
+//		return focoService.cadastrar(focoRequest);
+//	}
+//
+//
+//	@ApiOperation(value = "Busca todos os focos de dengue")
+//	@GetMapping("/BuscarFocos")
+//	public ResponseEntity<ResponseBase<List<FocoResponse>>> buscarTodosOsFocos() {
+//		FocoService focoService = new FocoService.Instance(focoRepository)
+//				.withUsuarioRepository(usuarioRepository)
+//				.withImagemRepository(imagemRepository)
+//				.build();
+//		return focoService.buscarFocos();
+//	}
+//
+//	@ApiOperation(value = "Busca todos os focos de dengue de um usuário")
+//	@GetMapping("/BuscarFocosPorId")
+//	public ResponseEntity<ResponseBase<List<FocoResponse>>> buscarTodosOsFocos(@RequestParam Long idUsuario) {
+//		FocoService focoService = new FocoService.Instance(focoRepository)
+//				.withUsuarioRepository(usuarioRepository)
+//				.withImagemRepository(imagemRepository)
+//				.build();
+//		return focoService.buscarFocos(idUsuario);
+//	}
+//}

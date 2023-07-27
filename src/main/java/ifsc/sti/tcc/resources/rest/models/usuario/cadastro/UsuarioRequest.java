@@ -102,11 +102,41 @@ public class UsuarioRequest {
 		this.imagemPerfil = imagemPerfil;
 	}
 
+	public Boolean docIsEmptyOrNull() {
+		if(cpf == null)
+			return true;
+
+		return cpf.isEmpty();
+	}
+
+	public Boolean emailIsEmptyOrNull() {
+		if(email == null)
+			return true;
+
+		return email.isEmpty();
+	}
+
+	public Boolean authIsEmptyOrNull() {
+		return docIsEmptyOrNull() && emailIsEmptyOrNull();
+	}
+
 	public ValidatedField validarCampos() {
 		ValidatedField validatedField;
-		if (!cpfValido()) {
-			validatedField = new ValidatedField("CPF Inválido", false);
-			return validatedField;
+
+		if (cpf != null) {
+			if (!cpfValido()) {
+				validatedField = new ValidatedField("CPF Inválido", false);
+				return validatedField;
+			}
+		}
+
+		if (email != null) {
+			switch (emailValido()) {
+				case ValidateUtil.STRING_LONGA:
+					return new ValidatedField("Email deve conter no máximo 200 caracteres", false);
+				case ValidateUtil.STRING_VAZIA:
+					return new ValidatedField("Informe um email válido", false);
+			}
 		}
 
 		switch (nomeValido()) {

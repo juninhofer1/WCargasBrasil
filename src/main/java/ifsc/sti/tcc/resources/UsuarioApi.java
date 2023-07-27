@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.validation.Valid;
 
+import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginEmailRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,7 +19,7 @@ import ifsc.sti.tcc.repository.ImagemRepository;
 import ifsc.sti.tcc.repository.UsuarioRepository;
 import ifsc.sti.tcc.resources.rest.ResponseBase;
 import ifsc.sti.tcc.resources.rest.models.usuario.cadastro.UsuarioRequest;
-import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginRequest;
+import ifsc.sti.tcc.resources.rest.models.usuario.login.request.LoginDocumentRequest;
 import ifsc.sti.tcc.resources.rest.models.usuario.login.response.UsuarioBaseResponse;
 import ifsc.sti.tcc.service.UsuarioService;
 import io.swagger.annotations.Api;
@@ -64,8 +65,17 @@ public class UsuarioApi {
 	}
 	
 	@ApiOperation(value = "Realiza a autenticação dos usuários")
-	@RequestMapping(value = "/Login", method = RequestMethod.POST)
-	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> login(@RequestBody @Valid LoginRequest loginRequest) {
+	@RequestMapping(value = "/LoginDocument", method = RequestMethod.POST)
+	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> login(@RequestBody @Valid LoginDocumentRequest loginRequest) {
+		UsuarioService lUsuarioService = new UsuarioService.Instance(usuarioRepository)
+				.withImagemRepository(imagemRepository)
+				.build();
+		return lUsuarioService.autenticar(loginRequest);
+	}
+
+	@ApiOperation(value = "Realiza a autenticação dos usuários")
+	@RequestMapping(value = "/LoginEmail", method = RequestMethod.POST)
+	public ResponseEntity<ResponseBase<UsuarioBaseResponse>> login(@RequestBody @Valid LoginEmailRequest loginRequest) {
 		UsuarioService lUsuarioService = new UsuarioService.Instance(usuarioRepository)
 				.withImagemRepository(imagemRepository)
 				.build();
